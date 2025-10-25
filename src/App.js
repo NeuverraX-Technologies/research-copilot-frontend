@@ -342,14 +342,14 @@ function AppContent() {
                         <div className="flex-1 bg-white/20 backdrop-blur-sm rounded-lg p-3">
                           <p className="text-sm mb-1">Monthly</p>
                           <p className="text-2xl font-bold">
-                            ₹{currentUser.isStudent ? '239' : '399'}
+                            ₹{currentUser.isStudent ? '359' : '599'}
                             <span className="text-sm font-normal">/month</span>
                           </p>
                         </div>
                         <div className="flex-1 bg-white/20 backdrop-blur-sm rounded-lg p-3">
                           <p className="text-sm mb-1">Annual <span className="text-xs">(Save 17%)</span></p>
                           <p className="text-2xl font-bold">
-                            ₹{currentUser.isStudent ? '2,399' : '3,999'}
+                            ₹{currentUser.isStudent ? '3,599' : '5,999'}
                             <span className="text-sm font-normal">/year</span>
                           </p>
                         </div>

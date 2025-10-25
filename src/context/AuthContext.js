@@ -222,8 +222,8 @@ export function AuthProvider({ children }) {
   // Calculate pricing with student discount
   const getPricing = (plan) => {
     const prices = {
-      'pro-monthly': 399,
-      'pro-annual': 3999,
+      'pro-monthly': 599,
+      'pro-annual': 5999,
       'enterprise': 29999
     };
 

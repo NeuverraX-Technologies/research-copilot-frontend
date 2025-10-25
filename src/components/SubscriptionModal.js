@@ -1,17 +1,18 @@
-// src/components/SubscriptionModal.js - SECURE Payment Flow (No Bypass)
+// src/components/SubscriptionModal.js - Direct Razorpay Payment (No Redirect)
 import React, { useState } from "react";
 import { AiOutlineClose, AiOutlineCheck, AiOutlineCrown, AiOutlineTeam, AiOutlineFire } from "react-icons/ai";
 import { useAuth } from "../context/AuthContext";
 
 export default function SubscriptionModal({ isOpen, onClose, currentPlan = "free", reason = "limit" }) {
   const [billingCycle, setBillingCycle] = useState("monthly");
-  const { currentUser } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const { currentUser, upgradeToPro } = useAuth();
 
   if (!isOpen) return null;
 
   const isStudent = currentUser?.isStudent || false;
 
-  // Realistic pricing based on actual features
+  // Pricing from your config
   const pricing = {
     'pro-monthly': isStudent ? 359 : 599,
     'pro-annual': isStudent ? 3599 : 5999
@@ -39,7 +40,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan = "free
       originalPrice: billingCycle === "annual" ? Math.round(pricing['pro-monthly'] * 12) : null,
       period: billingCycle === "monthly" ? "month" : "year",
       savings: billingCycle === "annual" ? Math.round((pricing['pro-monthly'] * 12) - pricing['pro-annual']) : null,
-      description: "For serious researchers and PhD students",
+      description: "For serious researcher and scholar",
       badge: "Most Popular",
       features: [
         "Unlimited queries per day",
@@ -55,7 +56,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan = "free
         "Beta feature access"
       ],
       realityCheck: [
-        "✅ Based on GPT-5 analysis capabilities",
+        "✅ Based on GPT-4 analysis capabilities",
         "✅ Actual academic references from training data",
         "✅ Natural language understanding",
         "✅ Priority queue for faster processing",
@@ -64,11 +65,11 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan = "free
       ]
     },
     enterprise: {
-      name: "Research Institution",
+      name: "Enterprise",
       price: 29999,
       period: "year",
       seats: "10 seats",
-      description: "For universities and research teams",
+      description: "For companies, universities and research teams",
       features: [
         "Everything in Pro, plus:",
         "Team collaboration workspace",
@@ -105,8 +106,19 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan = "free
 
   const currentReason = reasonMessages[reason] || reasonMessages.limit;
 
-  // CRITICAL: Secure payment handler - Redirects to payment page (NO BYPASS)
-  const handleUpgrade = (selectedPlan) => {
+  // Load Razorpay script
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  // Handle payment
+  const handleUpgrade = async (selectedPlan) => {
     if (!currentUser) {
       alert('Please login first to upgrade');
       return;
@@ -117,17 +129,110 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan = "free
       return;
     }
 
-    // SECURITY: Redirect to payment page - NO direct upgrade
-    const planType = billingCycle === 'monthly' ? 'pro-monthly' : 'pro-annual';
-    const paymentUrl = new URL('https://neuverrax.com/payment.html');
-    paymentUrl.searchParams.append('plan', planType);
-    paymentUrl.searchParams.append('userId', currentUser.uid);
-    paymentUrl.searchParams.append('email', currentUser.email);
-    paymentUrl.searchParams.append('name', currentUser.displayName);
-    paymentUrl.searchParams.append('isStudent', isStudent.toString());
+    setLoading(true);
 
-    // Redirect to payment page
-    window.location.href = paymentUrl.toString();
+    try {
+      const planType = billingCycle === 'monthly' ? 'pro-monthly' : 'pro-annual';
+      const amount = plans.pro.price;
+
+      // Load Razorpay script
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        alert('Failed to load payment gateway. Please check your internet connection.');
+        setLoading(false);
+        return;
+      }
+
+      // Create order on backend
+      const orderResponse = await fetch('http://localhost:5000/api/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: amount,
+          currency: 'INR',
+          plan: planType,
+          userId: currentUser.uid,
+          email: currentUser.email,
+          name: currentUser.displayName
+        })
+      });
+
+      const orderData = await orderResponse.json();
+
+      if (!orderData.success) {
+        throw new Error(orderData.message || 'Failed to create order');
+      }
+
+      // Razorpay payment options
+      const options = {
+        key: orderData.key_id,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: 'NeuverraX',
+        description: `Research Copilot Pro - ${billingCycle === 'monthly' ? 'Monthly' : 'Annual'}`,
+        image: 'https://neuverrax.com/logo.png',
+        order_id: orderData.order_id,
+        handler: async function (response) {
+          try {
+            // Verify payment
+            const verifyResponse = await fetch('http://localhost:5000/api/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                plan: planType,
+                userId: currentUser.uid,
+                email: currentUser.email,
+                amount: amount
+              })
+            });
+
+            const verifyData = await verifyResponse.json();
+
+            if (verifyData.success) {
+              // Upgrade user locally
+              upgradeToPro(planType);
+              
+              alert(`🎉 Payment Successful!\n\nYou're now a Pro member!\n\nPayment ID: ${response.razorpay_payment_id}\n\nEnjoy unlimited queries!`);
+              
+              onClose();
+              window.location.reload(); // Refresh to show Pro features
+            } else {
+              throw new Error('Payment verification failed');
+            }
+          } catch (error) {
+            console.error('Payment verification error:', error);
+            alert('Payment verification failed. Please contact support@neuverrax.com with your payment ID: ' + response.razorpay_payment_id);
+          }
+        },
+        prefill: {
+          name: currentUser.displayName,
+          email: currentUser.email
+        },
+        notes: {
+          plan: planType,
+          userId: currentUser.uid
+        },
+        theme: {
+          color: '#667eea'
+        },
+        modal: {
+          ondismiss: function() {
+            setLoading(false);
+          }
+        }
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+
+    } catch (error) {
+      console.error('Payment error:', error);
+      alert('Failed to initiate payment. Please try again or contact support.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -205,7 +310,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan = "free
               </ul>
             </div>
 
-            {/* Pro Plan - Highlighted */}
+            {/* Pro Plan */}
             <div className="border-4 border-blue-500 rounded-xl p-6 bg-gradient-to-br from-blue-50 to-purple-50 hover:shadow-2xl transition transform scale-105 relative">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                 <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-1 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg">
@@ -242,10 +347,26 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan = "free
 
               <button
                 onClick={() => handleUpgrade('pro')}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-bold hover:from-blue-700 hover:to-purple-700 transition mb-4 flex items-center justify-center gap-2 shadow-lg"
+                disabled={loading || currentPlan === 'pro'}
+                className={`w-full py-3 rounded-lg font-bold transition mb-4 flex items-center justify-center gap-2 shadow-lg ${
+                  loading || currentPlan === 'pro'
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
+                }`}
               >
-                <AiOutlineCrown />
-                Upgrade to Pro
+                {loading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Processing...</span>
+                  </>
+                ) : currentPlan === 'pro' ? (
+                  'Current Plan'
+                ) : (
+                  <>
+                    <AiOutlineCrown />
+                    Upgrade to Pro
+                  </>
+                )}
               </button>
 
               <ul className="space-y-2 mb-4">
@@ -257,7 +378,7 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan = "free
                 ))}
               </ul>
 
-              {/* Reality Check Section */}
+              {/* Reality Check */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
                 <p className="font-semibold text-gray-800 text-xs mb-2">📋 What This Actually Means:</p>
                 {plans.pro.realityCheck.map((item, idx) => (
