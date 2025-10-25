@@ -390,7 +390,7 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribe, curren
               Maybe Later
             </button>
             <p className="text-xs text-gray-500 mt-2">
-              Questions? Email us at support@neuverrax.com
+              Questions? Email us at info@neuverrax.com
             </p>
           </div>
         </div>

@@ -129,7 +129,7 @@ function AppContent() {
 
     if (plan === 'enterprise') {
       // Open email client for enterprise inquiries
-      window.location.href = 'mailto:enterprise@neuverrax.com?subject=Enterprise Plan Inquiry';
+      window.location.href = 'mailto:info@neuverrax.com?subject=Enterprise Plan Inquiry';
       setSubModalOpen(false);
       return;
     }
