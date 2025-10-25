@@ -145,8 +145,40 @@ function AppContent() {
   };
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    const token = urlParams.get('token');
+    const plan = urlParams.get('plan');
+
+    if (paymentStatus === 'success' && token && currentUser) {
+      // Verify subscription with backend
+      fetch('http://localhost:5000/api/verify-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: token,
+          userId: currentUser.uid
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          // Update local user state
+          upgradeToPro(plan);
+          
+          // Show success message
+          alert(`🎉 Payment Successful!\n\nYou're now a Pro member!\n\nEnjoy unlimited queries and all Pro features.`);
+          
+          // Clean URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      })
+      .catch(err => {
+        console.error('Subscription verification failed:', err);
+      });
+    }
     resultsEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatHistory]);
+  }, [currentUser], [chatHistory]);
 
   const renderContent = () => {
     switch (activeView) {

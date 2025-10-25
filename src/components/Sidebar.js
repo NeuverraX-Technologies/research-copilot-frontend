@@ -147,11 +147,11 @@ export default function Sidebar({
             <item.icon size={20} />
             <span className="font-medium">{item.label}</span>
           </button>
-        ))}
+        ))} 
 
         <div className="my-4 border-t border-gray-700" />
 
-        {/* Upgrade Button (for non-Pro users) */}
+        {/* Upgrade Button (for non-Pro users)}
         {currentUser && currentUser.subscriptionTier === 'free' && (
           <button
             onClick={onUpgradeClick}
@@ -160,7 +160,7 @@ export default function Sidebar({
             <AiOutlineCrown size={20} />
             <span>Upgrade to Pro</span>
           </button>
-        )}
+        )}*/}
 
         {/* Settings */}
         <button

@@ -1,17 +1,21 @@
-// src/components/SubscriptionModal.js - Complete Pricing & Upgrade Modal (₹399 pricing)
+// src/components/SubscriptionModal.js - SECURE Payment Flow (No Bypass)
 import React, { useState } from "react";
 import { AiOutlineClose, AiOutlineCheck, AiOutlineCrown, AiOutlineTeam, AiOutlineFire } from "react-icons/ai";
-import PRICING_CONFIG from "../config/PRICING_CONFIG";
+import { useAuth } from "../context/AuthContext";
 
-export default function SubscriptionModal({ isOpen, onClose, onSubscribe, currentPlan = "free", reason = "limit", isStudent = false }) {
-  const [billingCycle, setBillingCycle] = useState("monthly"); // monthly or annual
+export default function SubscriptionModal({ isOpen, onClose, currentPlan = "free", reason = "limit" }) {
+  const [billingCycle, setBillingCycle] = useState("monthly");
+  const { currentUser } = useAuth();
 
   if (!isOpen) return null;
 
-  // Get pricing details from centralized config
-  const proMonthly = PRICING_CONFIG.getPriceDetails('pro-monthly', isStudent);
-  const proAnnual = PRICING_CONFIG.getPriceDetails('pro-annual', isStudent);
-  const enterprise = PRICING_CONFIG.getPriceDetails('enterprise', false);
+  const isStudent = currentUser?.isStudent || false;
+
+  // Realistic pricing based on actual features
+  const pricing = {
+    'pro-monthly': isStudent ? 239 : 399,
+    'pro-annual': isStudent ? 2399 : 3999
+  };
 
   const plans = {
     free: {
@@ -20,56 +24,50 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribe, curren
       period: "forever",
       description: "Perfect for getting started",
       features: [
-        `${PRICING_CONFIG.FREE_DAILY_LIMIT} queries per day`,
-        `Basic ${PRICING_CONFIG.FREE_SECTIONS}-section analysis`,
-        `${PRICING_CONFIG.FREE_REFERENCES_MAX} references per query`,
+        "5 queries per day",
+        "Basic 6-section analysis",
+        "Up to 15 references per query",
         "Clickable citations",
         "Export as text only",
         "7-day query history",
-        "Email support (48h)",
-        "Watermark on exports"
-      ],
-      color: "gray"
+        "Email support (48h)"
+      ]
     },
     pro: {
       name: "Research Professional",
-      price: billingCycle === "monthly" ? proMonthly.discounted : proAnnual.discounted,
-      originalPrice: billingCycle === "annual" ? proAnnual.originalMonthly : null,
+      price: billingCycle === "monthly" ? pricing['pro-monthly'] : pricing['pro-annual'],
+      originalPrice: billingCycle === "annual" ? Math.round(pricing['pro-monthly'] * 12) : null,
       period: billingCycle === "monthly" ? "month" : "year",
-      dailyCost: billingCycle === "monthly" ? proMonthly.dailyCost : proAnnual.dailyCost,
-      savings: billingCycle === "annual" ? PRICING_CONFIG.formatPrice(proAnnual.savings) : null,
-      savingsPercent: billingCycle === "annual" ? Math.round(proAnnual.annualDiscountPercent) : null,
+      savings: billingCycle === "annual" ? Math.round((pricing['pro-monthly'] * 12) - pricing['pro-annual']) : null,
       description: "For serious researchers and PhD students",
       badge: "Most Popular",
       features: [
         "Unlimited queries per day",
-        `Enhanced ${PRICING_CONFIG.PRO_SECTIONS}-section analysis`,
-        `${PRICING_CONFIG.PRO_REFERENCES_MIN}-${PRICING_CONFIG.PRO_REFERENCES_MAX} references per query`,
-        "Priority processing (faster)",
+        "Enhanced 9-section analysis",
+        "18-25 references per query",
+        "Priority processing (faster response)",
         "Export to PDF, BibTeX, Markdown",
         "Unlimited query history",
-        "Save favorite queries",
-        "No watermark",
+        "Save and organize queries",
+        "No watermarks",
         "Email support (24h)",
-        "Advanced citation management",
-        "Filter by year, type, venue",
-        "Beta features early access"
+        "Advanced citation filters",
+        "Beta feature access"
       ],
-      valueProps: [
-        "💰 Saves 10-15 hours/week",
-        "📚 Cheaper than 1 textbook",
-        "🎓 Perfect for PhD journey",
-        `⚡ Only ${PRICING_CONFIG.formatPrice(proMonthly.dailyCost)}/day`
-      ],
-      color: "blue",
-      icon: AiOutlineCrown
+      realityCheck: [
+        "✅ Based on GPT-5 analysis capabilities",
+        "✅ Actual academic references from training data",
+        "✅ Natural language understanding",
+        "✅ Priority queue for faster processing",
+        "⚠️ References limited to AI training cutoff (Jan 2025)",
+        "⚠️ Citations may need manual verification"
+      ]
     },
     enterprise: {
       name: "Research Institution",
-      price: enterprise.discounted,
+      price: 29999,
       period: "year",
-      seats: `${enterprise.seats} seats`,
-      perSeatDisplay: `${PRICING_CONFIG.formatPrice(enterprise.perSeatMonthly)}/seat/month`,
+      seats: "10 seats",
       description: "For universities and research teams",
       features: [
         "Everything in Pro, plus:",
@@ -77,40 +75,60 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribe, curren
         "Shared query library",
         "Admin dashboard & analytics",
         "Team member management",
-        "Custom integrations (Zotero, Notion)",
+        "Custom integrations",
         "Dedicated account manager",
-        "Priority support (4h response)",
-        "Training sessions for team",
-        "Custom branding option",
-        "SSO integration available",
-        "Invoice & PO support",
-        "API access (add-on)",
-        "White-label option (add-on)"
-      ],
-      color: "purple",
-      icon: AiOutlineTeam
+        "Priority support (4h)",
+        "Training sessions",
+        "SSO integration",
+        "Invoice support"
+      ]
     }
   };
 
   const reasonMessages = {
     limit: {
-      title: "🎯 You've Reached Your Daily Limit!",
-      message: `You've used all ${PRICING_CONFIG.FREE_DAILY_LIMIT} free queries today. Upgrade to Pro for unlimited access!`,
-      highlight: "Your queries reset in: 18 hours 32 minutes"
+      title: "🎯 Daily Limit Reached",
+      message: "You've used all 5 free queries today. Upgrade to Pro for unlimited access.",
+      highlight: "Queries reset at midnight IST"
     },
     feature: {
       title: "🌟 Unlock Pro Features",
-      message: "This feature is available in Pro and Enterprise plans only.",
-      highlight: "Upgrade now to access advanced research tools"
+      message: "This feature is available in Pro and Enterprise plans.",
+      highlight: "Upgrade to access advanced tools"
     },
     quality: {
       title: "📚 Get Enhanced Analysis",
-      message: `Pro users get ${PRICING_CONFIG.PRO_SECTIONS} comprehensive sections and ${PRICING_CONFIG.PRO_REFERENCES_MIN}-${PRICING_CONFIG.PRO_REFERENCES_MAX} references per query.`,
-      highlight: "You're getting limited results with the free plan"
+      message: "Pro users get 9 comprehensive sections and up to 25 references per query.",
+      highlight: "Free users get 6 sections and up to 15 references"
     }
   };
 
   const currentReason = reasonMessages[reason] || reasonMessages.limit;
+
+  // CRITICAL: Secure payment handler - Redirects to payment page (NO BYPASS)
+  const handleUpgrade = (selectedPlan) => {
+    if (!currentUser) {
+      alert('Please login first to upgrade');
+      return;
+    }
+
+    if (selectedPlan === 'enterprise') {
+      window.location.href = 'mailto:info@neuverrax.com?subject=Enterprise Plan Inquiry';
+      return;
+    }
+
+    // SECURITY: Redirect to payment page - NO direct upgrade
+    const planType = billingCycle === 'monthly' ? 'pro-monthly' : 'pro-annual';
+    const paymentUrl = new URL('https://neuverrax.com/payment.html');
+    paymentUrl.searchParams.append('plan', planType);
+    paymentUrl.searchParams.append('userId', currentUser.uid);
+    paymentUrl.searchParams.append('email', currentUser.email);
+    paymentUrl.searchParams.append('name', currentUser.displayName);
+    paymentUrl.searchParams.append('isStudent', isStudent.toString());
+
+    // Redirect to payment page
+    window.location.href = paymentUrl.toString();
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
@@ -128,46 +146,11 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribe, curren
                 </div>
               )}
             </div>
-            <button
-              onClick={onClose}
-              className="text-white hover:bg-white/20 rounded-full p-2 transition"
-            >
+            <button onClick={onClose} className="text-white hover:bg-white/20 rounded-full p-2 transition">
               <AiOutlineClose size={24} />
             </button>
           </div>
         </div>
-
-        {/* Today's Value (for limit reason) */}
-        {reason === "limit" && (
-          <div className="bg-yellow-50 border-b border-yellow-200 p-4">
-            <div className="max-w-4xl mx-auto">
-              <h3 className="font-semibold text-gray-800 mb-2">📊 What You've Accomplished Today:</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">⏱️</span>
-                  <div>
-                    <p className="font-semibold text-gray-800">12+ hours saved</p>
-                    <p className="text-gray-600">on manual literature review</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">📚</span>
-                  <div>
-                    <p className="font-semibold text-gray-800">75+ papers cited</p>
-                    <p className="text-gray-600">with authentic references</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">💰</span>
-                  <div>
-                    <p className="font-semibold text-gray-800">₹2,400+ value</p>
-                    <p className="text-gray-600">in comprehensive analysis</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Billing Toggle */}
         <div className="bg-gray-50 border-b border-gray-200 p-4">
@@ -176,9 +159,7 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribe, curren
               <button
                 onClick={() => setBillingCycle("monthly")}
                 className={`px-6 py-2 rounded-md font-medium transition ${
-                  billingCycle === "monthly"
-                    ? "bg-blue-600 text-white"
-                    : "text-gray-600 hover:text-gray-800"
+                  billingCycle === "monthly" ? "bg-blue-600 text-white" : "text-gray-600 hover:text-gray-800"
                 }`}
               >
                 Monthly
@@ -186,14 +167,12 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribe, curren
               <button
                 onClick={() => setBillingCycle("annual")}
                 className={`px-6 py-2 rounded-md font-medium transition relative ${
-                  billingCycle === "annual"
-                    ? "bg-blue-600 text-white"
-                    : "text-gray-600 hover:text-gray-800"
+                  billingCycle === "annual" ? "bg-blue-600 text-white" : "text-gray-600 hover:text-gray-800"
                 }`}
               >
                 Annual
-                <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full whitespace-nowrap">
-                  Save {proAnnual.savingsPercent}%
+                <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
+                  Save 17%
                 </span>
               </button>
             </div>
@@ -211,13 +190,11 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribe, curren
                 <div className="text-4xl font-bold text-gray-800 mb-1">Free</div>
                 <p className="text-gray-600 text-sm">{plans.free.description}</p>
               </div>
-
               {currentPlan === "free" && (
                 <div className="bg-gray-100 text-gray-700 py-2 px-4 rounded-lg text-center font-medium mb-4">
                   Current Plan
                 </div>
               )}
-
               <ul className="space-y-3 mb-6">
                 {plans.free.features.map((feature, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-sm">
@@ -243,20 +220,16 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribe, curren
                   {plans.pro.name}
                 </h3>
                 <div className="mb-2">
-                  <div className="text-5xl font-bold text-blue-600">
-                    {PRICING_CONFIG.formatPrice(plans.pro.price)}
-                  </div>
+                  <div className="text-5xl font-bold text-blue-600">₹{plans.pro.price}</div>
                   <div className="text-gray-600">per {plans.pro.period}</div>
                   {plans.pro.originalPrice && (
                     <div className="text-sm mt-1">
-                      <span className="line-through text-gray-400">
-                        {PRICING_CONFIG.formatPrice(plans.pro.originalPrice)}
-                      </span>
-                      <span className="ml-2 text-green-600 font-semibold">{plans.pro.savings}</span>
+                      <span className="line-through text-gray-400">₹{plans.pro.originalPrice}</span>
+                      <span className="ml-2 text-green-600 font-semibold">Save ₹{plans.pro.savings}</span>
                     </div>
                   )}
                   <div className="text-sm text-gray-600 mt-1">
-                    Just {PRICING_CONFIG.formatPrice(plans.pro.dailyCost)}/day
+                    Just ₹{Math.round(plans.pro.price / (billingCycle === 'monthly' ? 30 : 365))}/day
                   </div>
                   {isStudent && (
                     <div className="mt-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold inline-block">
@@ -268,22 +241,14 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribe, curren
               </div>
 
               <button
-                onClick={() => onSubscribe(billingCycle === "monthly" ? "pro-monthly" : "pro-annual")}
+                onClick={() => handleUpgrade('pro')}
                 className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-bold hover:from-blue-700 hover:to-purple-700 transition mb-4 flex items-center justify-center gap-2 shadow-lg"
               >
                 <AiOutlineCrown />
                 Upgrade to Pro
               </button>
 
-              {/* Value Props */}
-              <div className="bg-white/70 backdrop-blur-sm rounded-lg p-3 mb-4 border border-blue-200">
-                <p className="font-semibold text-gray-800 text-sm mb-2">💎 Why Pro is Worth It:</p>
-                {plans.pro.valueProps.map((prop, idx) => (
-                  <p key={idx} className="text-xs text-gray-700 mb-1">{prop}</p>
-                ))}
-              </div>
-
-              <ul className="space-y-2">
+              <ul className="space-y-2 mb-4">
                 {plans.pro.features.map((feature, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-sm">
                     <AiOutlineCheck className="text-blue-600 mt-0.5 flex-shrink-0 font-bold" />
@@ -291,6 +256,14 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribe, curren
                   </li>
                 ))}
               </ul>
+
+              {/* Reality Check Section */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+                <p className="font-semibold text-gray-800 text-xs mb-2">📋 What This Actually Means:</p>
+                {plans.pro.realityCheck.map((item, idx) => (
+                  <p key={idx} className="text-xs text-gray-700 mb-1">{item}</p>
+                ))}
+              </div>
             </div>
 
             {/* Enterprise Plan */}
@@ -300,17 +273,14 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribe, curren
                   <AiOutlineTeam className="text-purple-600" />
                   {plans.enterprise.name}
                 </h3>
-                <div className="text-4xl font-bold text-purple-600 mb-1">
-                  {PRICING_CONFIG.formatPrice(plans.enterprise.price)}
-                </div>
+                <div className="text-4xl font-bold text-purple-600 mb-1">₹{plans.enterprise.price}</div>
                 <div className="text-gray-600 text-sm">per {plans.enterprise.period}</div>
                 <div className="text-sm text-gray-600 mb-1">{plans.enterprise.seats}</div>
-                <div className="text-xs text-green-600 font-semibold">{plans.enterprise.perSeatDisplay}</div>
                 <p className="text-gray-700 text-sm mt-2">{plans.enterprise.description}</p>
               </div>
 
               <button
-                onClick={() => onSubscribe("enterprise")}
+                onClick={() => handleUpgrade('enterprise')}
                 className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-bold hover:from-purple-700 hover:to-pink-700 transition mb-4"
               >
                 Contact Sales
@@ -328,53 +298,24 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribe, curren
           </div>
         </div>
 
-        {/* Social Proof */}
-        <div className="bg-gray-50 border-t border-gray-200 p-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <p className="text-gray-600 mb-4">
-              💚 <span className="font-semibold">Join 1,000+ researchers</span> from IITs, IISc, and top institutions
-            </p>
-            <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-600">
-              <span>✓ Trusted by PhD students</span>
-              <span>✓ Used at 50+ universities</span>
-              <span>✓ 10,000+ queries completed</span>
-              <span>✓ 4.9/5 rating</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Student Discount Banner */}
-        {!isStudent && (
-          <div className="bg-gradient-to-r from-green-500 to-teal-500 text-white p-4">
-            <div className="max-w-4xl mx-auto text-center">
-              <p className="font-bold text-lg mb-1">🎓 Student Discount Available!</p>
-              <p className="text-sm">Get 40% off Pro with valid .edu.in or .ac.in email</p>
-              <p className="text-xs mt-1 opacity-90">
-                Pro Monthly: {PRICING_CONFIG.formatPrice(PRICING_CONFIG.PRO_MONTHLY)} → {PRICING_CONFIG.formatPrice(PRICING_CONFIG.PRO_MONTHLY_STUDENT)} | 
-                Pro Annual: {PRICING_CONFIG.formatPrice(PRICING_CONFIG.PRO_ANNUAL)} → {PRICING_CONFIG.formatPrice(PRICING_CONFIG.PRO_ANNUAL_STUDENT)}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Guarantees */}
+        {/* Trust Badges */}
         <div className="p-6 bg-white border-t border-gray-200">
           <div className="max-w-4xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center text-sm">
               <div>
                 <div className="text-3xl mb-2">🔒</div>
                 <p className="font-semibold text-gray-800">Secure Payment</p>
-                <p className="text-gray-600 text-xs">Razorpay encrypted</p>
+                <p className="text-gray-600 text-xs">Razorpay PCI DSS certified</p>
               </div>
               <div>
-                <div className="text-3xl mb-2">💯</div>
-                <p className="font-semibold text-gray-800">7-Day Money Back</p>
-                <p className="text-gray-600 text-xs">No questions asked</p>
+                <div className="text-3xl mb-2">⚡</div>
+                <p className="font-semibold text-gray-800">Instant Access</p>
+                <p className="text-gray-600 text-xs">Start using Pro immediately</p>
               </div>
               <div>
-                <div className="text-3xl mb-2">🚀</div>
-                <p className="font-semibold text-gray-800">Instant Activation</p>
-                <p className="text-gray-600 text-xs">Start using immediately</p>
+                <div className="text-3xl mb-2">💳</div>
+                <p className="font-semibold text-gray-800">Cancel Anytime</p>
+                <p className="text-gray-600 text-xs">No long-term commitment</p>
               </div>
             </div>
           </div>
@@ -383,10 +324,7 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribe, curren
         {/* Footer */}
         <div className="bg-gray-100 p-4 rounded-b-2xl">
           <div className="max-w-4xl mx-auto text-center">
-            <button
-              onClick={onClose}
-              className="text-gray-600 hover:text-gray-800 text-sm font-medium"
-            >
+            <button onClick={onClose} className="text-gray-600 hover:text-gray-800 text-sm font-medium">
               Maybe Later
             </button>
             <p className="text-xs text-gray-500 mt-2">
