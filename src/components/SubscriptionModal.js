@@ -13,8 +13,8 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan = "free
 
   // Realistic pricing based on actual features
   const pricing = {
-    'pro-monthly': isStudent ? 239 : 399,
-    'pro-annual': isStudent ? 2399 : 3999
+    'pro-monthly': isStudent ? 239 : PRO_MONTHLY,
+    'pro-annual': isStudent ? 2399 : PRO_ANNUAL
   };
 
   const plans = {

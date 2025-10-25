@@ -10,7 +10,7 @@ export const PRICING_CONFIG = {
 
   // Discounts
   STUDENT_DISCOUNT: 0.40, // 40% off
-  ANNUAL_DISCOUNT_PERCENT: 16.7, // Calculated: (399*12 - 3999)/(399*12) * 100
+  ANNUAL_DISCOUNT_PERCENT: 16.7, // Calculated: (599*12 - 5999)/(599*12) * 100
 
   // Free Tier Limits
   FREE_DAILY_LIMIT: 5,
