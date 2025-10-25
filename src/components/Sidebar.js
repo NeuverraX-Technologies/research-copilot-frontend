@@ -50,16 +50,20 @@ export default function Sidebar({
             <AiOutlineClose size={20} />
           </button>
         </div>
-
+        
         <div className="mb-6 pb-4 border-b border-gray-700">
           <a 
             href="https://neuverrax.com" 
-            className="flex items-center gap-2 px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition group"
-            >
-            <svg className="w-5 h-5 transform group-hover:-translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-              <span className="font-medium">Back to NeuverraX</span>
+            onClick={(e) => {
+            e.preventDefault();
+            window.location.href = 'https://neuverrax.com';
+            }}
+            className="flex items-center gap-2 px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition group cursor-pointer"
+          >
+          <svg className="w-5 h-5 transform group-hover:-translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span className="font-medium">Back to NeuverraX</span>
           </a>
         </div>
 
