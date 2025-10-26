@@ -90,7 +90,7 @@ export async function fetchAIResponse(query) {
           sections: [
             {
               title: "We're Working On It",
-              content: "We're experiencing high demand right now. Please try again in a few moments.\n\n💡 Good news: This query won't count against your daily limit!\n\nWhat you can do:\n• Wait 30-60 seconds and try again\n• Try a more specific query\n• Refresh the page\n\nIf this persists, email us at support@neuverrax.com"
+              content: "We're experiencing high demand right now. Please try again in a few moments.\n\n💡 Good news: This query won't count against your daily limit!\n\nWhat you can do:\n• Wait 30-60 seconds and try again\n• Try a more specific query\n• Refresh the page\n\nIf this persists, email us at info@neuverrax.com"
             }
           ],
           references: [],
