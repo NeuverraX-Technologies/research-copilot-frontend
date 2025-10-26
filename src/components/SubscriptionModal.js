@@ -227,6 +227,15 @@ export default function SubscriptionModal({ isOpen, onClose, currentPlan = "free
             if (verifyData.success) {
               // Upgrade user locally
               upgradeToPro(planType);
+
+              // SEND EMAIL NOTIFICATION TO YOU
+              await sendPaymentNotification({
+                userName: currentUser.displayName,
+                userEmail: currentUser.email,
+                plan: planType,
+                amount: amount,
+                paymentId: response.razorpay_payment_id
+              });
               
               showAlert({
                 type: 'payment',

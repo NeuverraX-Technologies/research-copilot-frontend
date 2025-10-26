@@ -1,4 +1,4 @@
-// src/api/fetchAIResponse.js - Production-ready with comprehensive error handling
+// src/api/fetchAIResponse.js - Production-ready with user-friendly error handling
 export async function fetchAIResponse(query) {
   try {
     if (!query || !query.toString().trim()) {
@@ -9,12 +9,13 @@ export async function fetchAIResponse(query) {
         references: [],
         keyTerms: [],
         relatedFields: [],
-        suggestedCollaborations: []
+        suggestedCollaborations: [],
+        isError: false // Not a server error
       };
     }
 
     // Enhanced API base URL handling
-    const apiBase = process.env.REACT_APP_API_BASE || "http://localhost:5000";
+    const apiBase = process.env.REACT_APP_API_URL || "http://localhost:5000";
     const endpoint = `${apiBase}/api/query`;
     
     console.log("🔍 Fetching from:", endpoint);
@@ -38,6 +39,7 @@ export async function fetchAIResponse(query) {
 
     console.log("📡 Response status:", res.status);
 
+    // Handle specific HTTP errors with user-friendly messages
     if (!res.ok) {
       let errText = "Unknown error";
       try {
@@ -47,7 +49,60 @@ export async function fetchAIResponse(query) {
         console.error("❌ Could not read error response");
       }
       
-      throw new Error(`Server responded with ${res.status}: ${errText}`);
+      // Return user-friendly error based on status code
+      if (res.status === 429) {
+        return {
+          summary: "You've reached your daily query limit",
+          sections: [
+            {
+              title: "Upgrade to Continue Your Research",
+              content: "You've used all 5 free queries today. Your daily limit will reset at midnight IST.\n\n✨ Upgrade to Pro for:\n• Unlimited queries every day\n• Enhanced 9-section analysis\n• 18-25 references per query\n• Export to PDF & BibTeX\n• Priority processing\n\nClick the 'Upgrade to Pro' button to continue your research journey!"
+            }
+          ],
+          references: [],
+          keyTerms: [],
+          relatedFields: [],
+          suggestedCollaborations: [],
+          isError: false // This is expected, not a server error
+        };
+      }
+
+      if (res.status === 403) {
+        return {
+          summary: "Account access restricted",
+          sections: [
+            {
+              title: "Need Help?",
+              content: "Your account access has been temporarily restricted. This could be due to policy violations or suspicious activity.\n\nPlease contact our support team for assistance:\n📧 support@neuverrax.com\n\nWe're here to help resolve this quickly!"
+            }
+          ],
+          references: [],
+          keyTerms: [],
+          relatedFields: [],
+          suggestedCollaborations: [],
+          isError: false // Not a server error
+        };
+      }
+
+      if (res.status >= 500) {
+        return {
+          summary: "Our AI assistant is temporarily busy",
+          sections: [
+            {
+              title: "We're Working On It",
+              content: "We're experiencing high demand right now. Please try again in a few moments.\n\n💡 Good news: This query won't count against your daily limit!\n\nWhat you can do:\n• Wait 30-60 seconds and try again\n• Try a more specific query\n• Refresh the page\n\nIf this persists, email us at support@neuverrax.com"
+            }
+          ],
+          references: [],
+          keyTerms: [],
+          relatedFields: [],
+          suggestedCollaborations: [],
+          isError: true // Flag to NOT count this query
+        };
+      }
+      
+      // Generic error for other status codes
+      throw new Error(`Server responded with ${res.status}`);
     }
 
     // Parse response
@@ -59,9 +114,20 @@ export async function fetchAIResponse(query) {
       console.log("📚 Number of sections:", data?.sections?.length || 0);
     } catch (parseErr) {
       console.error("❌ JSON parse error:", parseErr);
-      const rawText = await res.text();
-      console.error("Raw response:", rawText.substring(0, 500));
-      throw new Error("Failed to parse server response as JSON");
+      return {
+        summary: "Something went wrong on our end",
+        sections: [
+          {
+            title: "Temporary Issue",
+            content: "We encountered a technical issue processing your request. This won't count against your daily limit.\n\nPlease try again in a moment. If the problem continues, contact support@neuverrax.com"
+          }
+        ],
+        references: [],
+        keyTerms: [],
+        relatedFields: [],
+        suggestedCollaborations: [],
+        isError: true // Don't count this query
+      };
     }
 
     // Validate and normalize response structure
@@ -71,7 +137,8 @@ export async function fetchAIResponse(query) {
       references: Array.isArray(data?.references) ? data.references : [],
       keyTerms: Array.isArray(data?.keyTerms) ? data.keyTerms : [],
       relatedFields: Array.isArray(data?.relatedFields) ? data.relatedFields : [],
-      suggestedCollaborations: Array.isArray(data?.suggestedCollaborations) ? data.suggestedCollaborations : []
+      suggestedCollaborations: Array.isArray(data?.suggestedCollaborations) ? data.suggestedCollaborations : [],
+      isError: false // Success!
     };
 
     console.log("✅ Request completed successfully");
@@ -82,53 +149,55 @@ export async function fetchAIResponse(query) {
     console.error("Error name:", err.name);
     console.error("Error message:", err.message);
 
-    // Provide specific error messages based on error type
-    let errorMessage = "⚠️ Failed to fetch AI response. ";
-    let errorDetails = "";
-
+    // User-friendly error messages for network/connection issues
     if (err.name === 'AbortError') {
-      errorMessage = "⚠️ Request timed out. ";
-      errorDetails = "The server took too long to respond. This might be due to complex analysis. Please try a more specific query or try again.";
-    } else if (err.message.includes("Failed to fetch") || err.message.includes("NetworkError")) {
-      errorMessage = "⚠️ Network error. ";
-      errorDetails = "Cannot connect to the server. Please ensure:\n1. Backend server is running (check http://localhost:5000/health)\n2. CORS is configured correctly\n3. No firewall is blocking the connection";
-    } else if (err.message.includes("JSON")) {
-      errorMessage = "⚠️ Invalid server response. ";
-      errorDetails = "The server returned malformed data. This might be an OpenAI API issue or prompt parsing problem. Check server logs.";
-    } else if (err.message.includes("500")) {
-      errorMessage = "⚠️ Server error. ";
-      errorDetails = "The backend encountered an error. This is likely an OpenAI API issue. Check:\n1. API key is valid\n2. You have sufficient credits\n3. Server console for detailed logs";
-    } else if (err.message.includes("401") || err.message.includes("403")) {
-      errorMessage = "⚠️ Authentication error. ";
-      errorDetails = "OpenAI API key is invalid or missing. Check your .env file.";
-    } else {
-      errorDetails = `Error: ${err.message}`;
+      return {
+        summary: "Request took too long",
+        sections: [
+          {
+            title: "Analysis Timeout",
+            content: "Your query is taking longer than expected to process. This sometimes happens with complex research questions.\n\n💡 This won't count against your daily limit!\n\nWhat to try:\n• Simplify your query\n• Be more specific\n• Try again in a moment\n\nNeed help? Email support@neuverrax.com"
+          }
+        ],
+        references: [],
+        keyTerms: [],
+        relatedFields: [],
+        suggestedCollaborations: [],
+        isError: true // Don't count this query
+      };
     }
 
+    if (err.message.includes("Failed to fetch") || err.message.includes("NetworkError") || err.message.includes("Network request failed")) {
+      return {
+        summary: "Connection issue detected",
+        sections: [
+          {
+            title: "Please Check Your Internet Connection",
+            content: "We're having trouble connecting to our research servers. This could be temporary.\n\n💡 This won't count against your daily limit!\n\nWhat to try:\n• Check your internet connection\n• Refresh the page\n• Try again in 30 seconds\n• Switch to a different network if available\n\nStill not working? Contact support@neuverrax.com"
+          }
+        ],
+        references: [],
+        keyTerms: [],
+        relatedFields: [],
+        suggestedCollaborations: [],
+        isError: true // Don't count this query
+      };
+    }
+
+    // Generic error fallback
     return {
-      summary: errorMessage + errorDetails,
+      summary: "Something unexpected happened",
       sections: [
         {
-          title: "Troubleshooting Steps",
-          content: `1. Check if backend server is running: http://localhost:5000/health
-2. Verify your .env file contains: OPENAI_API_KEY=your-key-here
-3. Check browser console (F12) for detailed error logs
-4. Check backend terminal for server-side errors
-5. Ensure you have OpenAI API credits available
-
-Error Details:
-${err.message}
-
-If the problem persists, please check:
-- Backend server logs
-- OpenAI API dashboard for quota/billing issues
-- Network connectivity`
+          title: "Temporary Technical Issue",
+          content: "We encountered an unexpected error. Don't worry - this won't count against your daily limit.\n\nPlease try again in a moment. If this keeps happening, email us at support@neuverrax.com with details about what you were searching for.\n\nWe apologize for the inconvenience!"
         }
       ],
       references: [],
       keyTerms: [],
       relatedFields: [],
-      suggestedCollaborations: []
+      suggestedCollaborations: [],
+      isError: true // Don't count this query
     };
   }
 }

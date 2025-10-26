@@ -48,8 +48,8 @@ function AppContent() {
 
     setProcessing(true);
     
-    // Increment query count
-    incrementQueryCount();
+    // DON'T increment yet - wait for success
+    // incrementQueryCount(); // MOVED TO AFTER SUCCESS
 
     const placeholderItem = {
       query,
@@ -67,6 +67,11 @@ function AppContent() {
 
     try {
       const result = await fetchAIResponse(query);
+
+      // ONLY increment if NOT an error
+      if (!result.isError) {
+        incrementQueryCount(); // Count successful queries only
+      }
 
       // If free user, limit the response
       let processedResult = result;
