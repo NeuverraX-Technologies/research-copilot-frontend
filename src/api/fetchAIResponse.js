@@ -20,6 +20,7 @@ export async function fetchAIResponse(query) {
     
     console.log("🔍 Fetching from:", endpoint);
     console.log("📝 Query:", query.substring(0, 100) + "...");
+    console.log("🌐 API Base URL:", apiBase); // Should show your Render URL
 
     // Add timeout to prevent hanging
     const controller = new AbortController();
@@ -73,7 +74,7 @@ export async function fetchAIResponse(query) {
           sections: [
             {
               title: "Need Help?",
-              content: "Your account access has been temporarily restricted. This could be due to policy violations or suspicious activity.\n\nPlease contact our support team for assistance:\n📧 support@neuverrax.com\n\nWe're here to help resolve this quickly!"
+              content: "Your account access has been temporarily restricted. This could be due to policy violations or suspicious activity.\n\nPlease contact our support team for assistance:\n📧 info@neuverrax.com\n\nWe're here to help resolve this quickly!"
             }
           ],
           references: [],
@@ -119,7 +120,7 @@ export async function fetchAIResponse(query) {
         sections: [
           {
             title: "Temporary Issue",
-            content: "We encountered a technical issue processing your request. This won't count against your daily limit.\n\nPlease try again in a moment. If the problem continues, contact support@neuverrax.com"
+            content: "We encountered a technical issue processing your request. This won't count against your daily limit.\n\nPlease try again in a moment. If the problem continues, contact info@neuverrax.com"
           }
         ],
         references: [],
@@ -156,7 +157,7 @@ export async function fetchAIResponse(query) {
         sections: [
           {
             title: "Analysis Timeout",
-            content: "Your query is taking longer than expected to process. This sometimes happens with complex research questions.\n\n💡 This won't count against your daily limit!\n\nWhat to try:\n• Simplify your query\n• Be more specific\n• Try again in a moment\n\nNeed help? Email support@neuverrax.com"
+            content: "Your query is taking longer than expected to process. This sometimes happens with complex research questions.\n\n💡 This won't count against your daily limit!\n\nWhat to try:\n• Simplify your query\n• Be more specific\n• Try again in a moment\n\nNeed help? Email info@neuverrax.com"
           }
         ],
         references: [],
@@ -173,7 +174,7 @@ export async function fetchAIResponse(query) {
         sections: [
           {
             title: "Please Check Your Internet Connection",
-            content: "We're having trouble connecting to our research servers. This could be temporary.\n\n💡 This won't count against your daily limit!\n\nWhat to try:\n• Check your internet connection\n• Refresh the page\n• Try again in 30 seconds\n• Switch to a different network if available\n\nStill not working? Contact support@neuverrax.com"
+            content: "We're having trouble connecting to our research servers. This could be temporary.\n\n💡 This won't count against your daily limit!\n\nWhat to try:\n• Check your internet connection\n• Refresh the page\n• Try again in 30 seconds\n• Switch to a different network if available\n\nStill not working? Contact info@neuverrax.com"
           }
         ],
         references: [],
